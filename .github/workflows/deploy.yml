@@ -1,0 +1,45 @@
+name: Deploy Python App to AWS Lambda
+
+on:
+  push:
+    branches:
+      - main   # Deploy when you push to main branch
+
+jobs:
+  deploy:
+    runs-on: ubuntu-latest
+
+    steps:
+
+    # Step 1 — Checkout your repo
+    - name: Checkout code
+      uses: actions/checkout@v3
+
+    # Step 2 — Setup Python version
+    - name: Setup Python
+      uses: actions/setup-python@v4
+      with:
+        python-version: "3.9"
+
+    # Step 3 — Install dependencies inside a folder
+    - name: Install dependencies
+      run: |
+        mkdir package
+        pip install -r requirements.txt -t package/
+        cp lambda_function.py package/
+
+    # Step 4 — Zip the final package
+    - name: Zip package
+      run: |
+        cd package
+        zip -r ../deploy.zip .
+
+    # Step 5 — Upload to AWS Lambda
+    - name: Deploy to AWS Lambda
+      uses: appleboy/lambda-action@v0.1.8
+      with:
+        aws_access_key_id: ${{ secrets.AWS_ACCESS_KEY_ID }}
+        aws_secret_access_key: ${{ secrets.AWS_SECRET_ACCESS_KEY }}
+        aws_region: ${{ secrets.AWS_REGION }}
+        function_name: my-python-app   # <-- Change to your Lambda function name
+        zip_file: deploy.zip
